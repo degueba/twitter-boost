@@ -1,16 +1,10 @@
 import tkinter as tk
 
 class ToggleButton:
-    def __init__(self, root, command=None):
+    def __init__(self, root, toggle=False, command=None):
         self.root = root
         self.command = command
-        self.is_toggled = False
-
-        def button_command(self):
-            if command:
-              command()
-            self.toggle()
-
+        self.is_toggled = toggle
         self.toggle_button = tk.Button(root, text="Off", command=self.button_command)
         self.toggle_button.pack(pady=20)
 

@@ -1,11 +1,6 @@
 import os
 import tweepy
-
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
+import time
 
 class Twitter:
     def __init__(self):
@@ -16,19 +11,43 @@ class Twitter:
         access_token=os.getenv("TWITTER_ACCESS_TOKEN")
         access_token_secret=os.getenv("TWITTER_ACCESS_SECRET")
 
-        print(bearer_token)
-
-        if not(bearer_token, consumer_key, consumer_secret):
+        if not(bearer_token, consumer_key, consumer_secret, access_token, access_token_secret):
             raise ValueError("Missing Environment Variables")
 
         self.client = tweepy.Client(bearer_token=bearer_token, consumer_key=consumer_key, consumer_secret=consumer_secret,
                                     access_token=access_token, access_token_secret=access_token_secret)
 
-    def create_post(self, content):
+    def create_post(self, content) -> str:
         try:
-            # Post a tweet
             if content:
-                self.client.create_tweet(text=content)
+                tweet = self.client.create_tweet(text=content)
                 print("Tweet posted successfully!")
+                print(tweet)
+                return tweet.data.get('id')
         except tweepy.TweepyException as e:
-            print(f"An error occurred: {e}")
+            if e.response.status_code == 429:
+                reset_time = int(e.response.headers.get('x-rate-limit-reset', time.time() + 60))
+                wait_time = max(0, reset_time - time.time())
+                print(f"Rate limit exceeded. Waiting for {wait_time} seconds...")
+                time.sleep(wait_time)
+            else:
+                print(f"An error occurred: {e}")
+
+    def reply_to_tweet(self, content, previous_tweet_id) -> str:
+        try:
+            if content:
+                tweet = self.client.create_tweet(
+                    text=content,
+                    in_reply_to_tweet_id=previous_tweet_id
+                )
+                print("Reply Tweet posted successfully!")
+                return tweet.data.get('id')
+
+        except tweepy.TweepyException as e:
+            if e.response.status_code == 429:
+                reset_time = int(e.response.headers.get('x-rate-limit-reset', time.time() + 60))
+                wait_time = max(0, reset_time - time.time())
+                print(f"Rate limit exceeded. Waiting for {wait_time} seconds...")
+                time.sleep(wait_time)
+            else:
+                print(f"An error occurred: {e}")
