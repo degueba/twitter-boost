@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import messagebox
 import os
 import time
 import threading
@@ -76,7 +77,13 @@ def stop_scheduler():
     scheduler.shutdown()
 
 def start_scheduler():
+    content = entry_string.get()
     toggle = cron_toggle.get()
+    
+    if not content:
+       messagebox.showwarning("Warning", "Please type a tweet subject.")
+       return
+
     if toggle:
       print(f"STOP CRON - {toggle}")
       cron_toggle.set(False)
@@ -90,7 +97,7 @@ def start_scheduler():
 
 # Setup APScheduler
 # scheduler.add_job(post, 'cron', day_of_week='mon-sun', hour='9,12,15,18')
-scheduler.add_job(post, 'interval', minutes=1)
+scheduler.add_job(post, 'interval', minutes=4)
 
 
 # Tkinter 
