@@ -104,7 +104,7 @@ def start_scheduler():
 
 # Setup APScheduler
 # scheduler.add_job(post, 'cron', day_of_week='mon-sun', hour='9,12,15,18')
-scheduler.add_job(post, 'interval', minutes=2)
+scheduler.add_job(post, 'interval', minutes=30)
 
 
 # Tkinter 
