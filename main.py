@@ -3,6 +3,7 @@ from tkinter import messagebox
 import os
 import time
 import threading
+import tweepy
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from widgets.togglebutton import ToggleButton
@@ -10,9 +11,16 @@ from integrations.twitter import Twitter
 from integrations.chatgpt import ChatGPT
 from dotenv import load_dotenv
 
+GREEN = '\033[92m'
+RED = '\033[91m'
+RESET = '\033[0m'
 
 # Load environment variables from .env file
 load_dotenv()
+twitter = Twitter()
+chatgpt = ChatGPT()
+
+
 window = tk.Tk()
 window.title("Twitter Boost")
 window.geometry('300x300')
@@ -27,42 +35,41 @@ thread_checkbox = tk.BooleanVar()
 # APScheduler 
 scheduler = BackgroundScheduler()
 
-
-
-
 # Function to handle long-running tasks in a separate thread
 def post():
   def run_post():
         print(f"Job is running at {datetime.now()}")
-        twitter = Twitter()
-        chatgpt = ChatGPT()
-        content = entry_string.get()
+        
+        category = entry_string.get()
         is_thread = thread_checkbox.get()
 
-        if content:
-            if is_thread:
-              logs.set("Generating thread...")
-              tweets = chatgpt.generate_twitter_thread(subject=content)
-              tweet_id = None
+        if category:
+            try:
+              if is_thread:
+                logs.set("Generating thread...")
+                tweets = chatgpt.generate_twitter_thread(category=category)
+                tweet_id = None
 
-              for index, tweet in enumerate(tweets):
-                  logs.set(f"Generating tweet {index}...")
+                for index, tweet in enumerate(tweets):
+                    logs.set(f"Generating tweet {index}...")
 
-                  if not tweet_id:
-                      logs.set("Creating first tweet...")
-                      tweet_id = twitter.create_post(content=tweet)
-                  else:
-                      time.sleep(5)
-                      logs.set("Replying to previous tweet...")
-                      tweet_id = twitter.reply_to_tweet(content=tweet, previous_tweet_id=tweet_id)
-              logs.set(f"✓ Your thread was posted successfully. ")
-              time.sleep(2)
-              logs.set("")
-            else:
-              logs.set("Generating post...")
-              tweet = chatgpt.generate_twitter_post(subject=content)
-              twitter.create_post(content=tweet)
-              logs.set(f"✓ Your tweet was posted successfully. ")
+                    if not tweet_id:
+                        logs.set("Creating first tweet...")
+                        tweet_id = twitter.create_post(content=tweet)
+                    else:
+                        time.sleep(10)
+                        logs.set("Replying to previous tweet...")
+                        tweet_id = twitter.reply_to_tweet(content=tweet, previous_tweet_id=tweet_id)
+                        logs.set(f"✓ Your thread was posted successfully. ")
+              else:
+                logs.set("Generating post...")
+                tweet = chatgpt.generate_twitter_post(category=category)
+                twitter.create_post(content=tweet)
+                logs.set(f"✓ Your tweet was posted successfully. ")
+            except tweepy.TweepyException as e:
+                logs.set(f"An error occurred: {e}")
+                print(f"An error occurred: {e}")
+            finally:
               time.sleep(2)
               logs.set("")
         else:
@@ -85,19 +92,19 @@ def start_scheduler():
        return
 
     if toggle:
-      print(f"STOP CRON - {toggle}")
       cron_toggle.set(False)
+      print(f"{RED}CRON has been stopped")
       stop_scheduler()
     else:
-      print(f"START CRON - {toggle}")
       cron_toggle.set(True)
+      print(f"{GREEN}CRON has been started")
       scheduler.start()
 
 
 
 # Setup APScheduler
 # scheduler.add_job(post, 'cron', day_of_week='mon-sun', hour='9,12,15,18')
-scheduler.add_job(post, 'interval', minutes=4)
+scheduler.add_job(post, 'interval', minutes=2)
 
 
 # Tkinter 
